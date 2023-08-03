@@ -11,21 +11,25 @@ export interface MetaMaskEthereumProvider {
 }
 
 export function getMetamaskProvider(provider: MetaMaskEthereumProvider) {
-  if (provider.isMetaMask) {
-    return provider;
-  }
+  try {
+    if (provider.isMetaMask) {
+      return provider;
+    }
 
-  if (provider.providers) {
-    const providers = provider.providers;
+    if (provider.providers) {
+      const providers = provider.providers;
 
-    for (const provider of providers) {
-      if (provider.isMetaMask) {
-        return provider;
+      for (const provider of providers) {
+        if (provider.isMetaMask) {
+          return provider;
+        }
       }
     }
-  }
 
-  return null;
+    return null;
+  } catch (error) {
+    return null;
+  }
 }
 
 export async function isSnapSupported(provider: MetaMaskEthereumProvider) {
