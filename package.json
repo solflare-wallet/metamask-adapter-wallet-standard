@@ -25,6 +25,7 @@
     "lib/"
   ],
   "dependencies": {
+    "@metamask/detect-provider": "^2.0.0",
     "@solana/wallet-standard-features": "^1.0.1",
     "@solana/web3.js": "^1.78.1",
     "@solflare-wallet/metamask-sdk": "^0.0.2",
