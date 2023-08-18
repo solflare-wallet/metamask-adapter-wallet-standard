@@ -21,8 +21,6 @@ export async function initializeWhenDetected(instance?: Solflare): Promise<void>
     return;
   }
 
-  isInitialized = true;
-
   const provider = await detectEthereumProvider({ silent: true });
 
   if (!provider) {
