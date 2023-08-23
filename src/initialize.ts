@@ -1,41 +1,25 @@
 import { registerWallet } from './register.js';
 import { SolflareMetamaskWallet } from './wallet.js';
-import Solflare from '@solflare-wallet/metamask-sdk';
-import detectEthereumProvider from '@metamask/detect-provider';
-import { getMetamaskProvider, isSnapSupported, MetaMaskEthereumProvider } from './provider';
+import SolflareMetamask from '@solflare-wallet/metamask-sdk';
 
 let isInitialized = false;
 
-export function initialize(instance?: Solflare): void {
+export function initialize(instance?: SolflareMetamask): void {
   if (isInitialized) {
     return;
   }
 
   isInitialized = true;
 
-  registerWallet(new SolflareMetamaskWallet(instance ?? new Solflare()));
+  registerWallet(new SolflareMetamaskWallet(instance ?? new SolflareMetamask()));
 }
 
-export async function initializeWhenDetected(instance?: Solflare): Promise<void> {
+export async function initializeWhenDetected(instance?: SolflareMetamask): Promise<void> {
   if (isInitialized) {
     return;
   }
 
-  const provider = await detectEthereumProvider({ silent: true });
-
-  if (!provider) {
-    return;
-  }
-
-  const metamaskProvider = getMetamaskProvider(provider as MetaMaskEthereumProvider);
-
-  if (!metamaskProvider) {
-    return;
-  }
-
-  const snapSupported = await isSnapSupported(metamaskProvider);
-
-  if (!snapSupported) {
+  if (!(await SolflareMetamask.isSupported())) {
     return;
   }
 
