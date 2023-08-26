@@ -12,7 +12,7 @@ import {
   type SolanaSignTransactionMethod,
   type SolanaSignTransactionOutput
 } from '@solana/wallet-standard-features';
-import { Transaction, VersionedTransaction } from '@solana/web3.js';
+import { VersionedTransaction } from '@solana/web3.js';
 import type { Wallet } from '@wallet-standard/base';
 import {
   StandardConnect,
@@ -247,7 +247,9 @@ export class SolflareMetamaskWallet implements Wallet {
         }
       }
 
-      const transactions = inputs.map(({ transaction }) => Transaction.from(transaction));
+      const transactions = inputs.map(({ transaction }) =>
+        VersionedTransaction.deserialize(transaction)
+      );
 
       const signedTransactions = await this.#solflare.signAllTransactions(transactions);
 
