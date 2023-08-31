@@ -11,7 +11,7 @@ import { SOLANA_CHAINS } from './solana.js';
 const chains = SOLANA_CHAINS;
 const features = [SolanaSignAndSendTransaction, SolanaSignTransaction, SolanaSignMessage] as const;
 
-export class SolflareMetamaskWalletAccount implements WalletAccount {
+export class SolflareMetaMaskWalletAccount implements WalletAccount {
   readonly #address: WalletAccount['address'];
   readonly #publicKey: WalletAccount['publicKey'];
   readonly #chains: WalletAccount['chains'];
@@ -44,7 +44,7 @@ export class SolflareMetamaskWalletAccount implements WalletAccount {
   }
 
   constructor({ address, publicKey, label, icon }: Omit<WalletAccount, 'chains' | 'features'>) {
-    if (new.target === SolflareMetamaskWalletAccount) {
+    if (new.target === SolflareMetaMaskWalletAccount) {
       Object.freeze(this);
     }
 

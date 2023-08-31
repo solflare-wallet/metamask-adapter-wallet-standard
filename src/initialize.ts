@@ -1,25 +1,25 @@
 import { registerWallet } from './register.js';
-import { SolflareMetamaskWallet } from './wallet.js';
-import SolflareMetamask from '@solflare-wallet/metamask-sdk';
+import { SolflareMetaMaskWallet } from './wallet.js';
+import SolflareMetaMask from '@solflare-wallet/metamask-sdk';
 
 let isInitialized = false;
 
-export function initialize(instance?: SolflareMetamask): void {
+export function initialize(instance?: SolflareMetaMask): void {
   if (isInitialized) {
     return;
   }
 
   isInitialized = true;
 
-  registerWallet(new SolflareMetamaskWallet(instance ?? new SolflareMetamask()));
+  registerWallet(new SolflareMetaMaskWallet(instance ?? new SolflareMetaMask()));
 }
 
-export async function initializeWhenDetected(instance?: SolflareMetamask): Promise<void> {
+export async function initializeWhenDetected(instance?: SolflareMetaMask): Promise<void> {
   if (isInitialized) {
     return;
   }
 
-  if (!(await SolflareMetamask.isSupported())) {
+  if (!(await SolflareMetaMask.isSupported())) {
     return;
   }
 

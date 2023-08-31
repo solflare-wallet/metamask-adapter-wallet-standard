@@ -28,27 +28,27 @@ import {
   type StandardEventsOnMethod
 } from '@wallet-standard/features';
 import bs58 from 'bs58';
-import { SolflareMetamaskWalletAccount } from './account.js';
+import { SolflareMetaMaskWalletAccount } from './account.js';
 import { icon } from './icon.js';
 import type { SolanaChain } from './solana.js';
 import { isSolanaChain, SOLANA_CHAINS } from './solana.js';
-import Solflare from '@solflare-wallet/metamask-sdk';
+import SolflareMetaMask from '@solflare-wallet/metamask-sdk';
 
-export const SolflareNamespace = 'solflare:';
+export const SolflareMetaMaskNamespace = 'solflareMetaMask:';
 
-export type SolflareMetamaskFeature = {
-  [SolflareNamespace]: {
-    solflare: Solflare;
+export type SolflareMetaMaskFeature = {
+  [SolflareMetaMaskNamespace]: {
+    solflareMetaMask: SolflareMetaMask;
   };
 };
 
-export class SolflareMetamaskWallet implements Wallet {
+export class SolflareMetaMaskWallet implements Wallet {
   readonly #listeners: { [E in StandardEventsNames]?: StandardEventsListeners[E][] } = {};
   readonly #version = '1.0.0' as const;
   readonly #name = 'MetaMask' as const;
   readonly #icon = icon;
-  #account: SolflareMetamaskWalletAccount | null = null;
-  readonly #solflare: Solflare;
+  #account: SolflareMetaMaskWalletAccount | null = null;
+  readonly #instance: SolflareMetaMask;
 
   get version() {
     return this.#version;
@@ -72,7 +72,7 @@ export class SolflareMetamaskWallet implements Wallet {
     SolanaSignAndSendTransactionFeature &
     SolanaSignTransactionFeature &
     SolanaSignMessageFeature &
-    SolflareMetamaskFeature {
+    SolflareMetaMaskFeature {
     return {
       [StandardConnect]: {
         version: '1.0.0',
@@ -100,8 +100,8 @@ export class SolflareMetamaskWallet implements Wallet {
         version: '1.0.0',
         signMessage: this.#signMessage
       },
-      [SolflareNamespace]: {
-        solflare: this.#solflare
+      [SolflareMetaMaskNamespace]: {
+        solflareMetaMask: this.#instance
       }
     };
   }
@@ -110,12 +110,12 @@ export class SolflareMetamaskWallet implements Wallet {
     return this.#account ? [this.#account] : [];
   }
 
-  constructor(instance: Solflare) {
-    if (new.target === SolflareMetamaskWallet) {
+  constructor(instance: SolflareMetaMask) {
+    if (new.target === SolflareMetaMaskWallet) {
       Object.freeze(this);
     }
 
-    this.#solflare = instance;
+    this.#instance = instance;
 
     instance.on('connect', this.#connected, this);
     instance.on('disconnect', this.#disconnected, this);
@@ -144,12 +144,12 @@ export class SolflareMetamaskWallet implements Wallet {
   }
 
   #connected = () => {
-    const address = this.#solflare.publicKey?.toString();
+    const address = this.#instance.publicKey?.toString();
     if (address) {
       if (!this.#account || this.#account.address !== address) {
-        this.#account = new SolflareMetamaskWalletAccount({
+        this.#account = new SolflareMetaMaskWalletAccount({
           address,
-          publicKey: this.#solflare.publicKey!.toBytes()
+          publicKey: this.#instance.publicKey!.toBytes()
         });
         this.#emit('change', { accounts: this.accounts });
       }
@@ -164,7 +164,7 @@ export class SolflareMetamaskWallet implements Wallet {
   };
 
   #reconnected = () => {
-    if (this.#solflare.publicKey) {
+    if (this.#instance.publicKey) {
       this.#connected();
     } else {
       this.#disconnected();
@@ -173,7 +173,7 @@ export class SolflareMetamaskWallet implements Wallet {
 
   #connect: StandardConnectMethod = async () => {
     if (!this.#account) {
-      await this.#solflare.connect();
+      await this.#instance.connect();
     }
 
     this.#connected();
@@ -182,7 +182,7 @@ export class SolflareMetamaskWallet implements Wallet {
   };
 
   #disconnect: StandardDisconnectMethod = async () => {
-    await this.#solflare.disconnect();
+    await this.#instance.disconnect();
   };
 
   #signAndSendTransaction: SolanaSignAndSendTransactionMethod = async (...inputs) => {
@@ -197,7 +197,7 @@ export class SolflareMetamaskWallet implements Wallet {
       if (account !== this.#account) throw new Error('invalid account');
       if (!isSolanaChain(chain)) throw new Error('invalid chain');
 
-      const signature = await this.#solflare.signAndSendTransaction(
+      const signature = await this.#instance.signAndSendTransaction(
         VersionedTransaction.deserialize(transaction),
         {
           preflightCommitment,
@@ -228,7 +228,7 @@ export class SolflareMetamaskWallet implements Wallet {
       if (account !== this.#account) throw new Error('invalid account');
       if (chain && !isSolanaChain(chain)) throw new Error('invalid chain');
 
-      const signedTransaction = await this.#solflare.signTransaction(
+      const signedTransaction = await this.#instance.signTransaction(
         VersionedTransaction.deserialize(transaction)
       );
 
@@ -251,7 +251,7 @@ export class SolflareMetamaskWallet implements Wallet {
         VersionedTransaction.deserialize(transaction)
       );
 
-      const signedTransactions = await this.#solflare.signAllTransactions(transactions);
+      const signedTransactions = await this.#instance.signAllTransactions(transactions);
 
       outputs.push(
         ...signedTransactions.map((signedTransaction) => ({
@@ -273,7 +273,7 @@ export class SolflareMetamaskWallet implements Wallet {
       const { message, account } = inputs[0]!;
       if (account !== this.#account) throw new Error('invalid account');
 
-      const signature = await this.#solflare.signMessage(message);
+      const signature = await this.#instance.signMessage(message);
 
       outputs.push({ signedMessage: message, signature });
     } else if (inputs.length > 1) {
