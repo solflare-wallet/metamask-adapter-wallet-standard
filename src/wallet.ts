@@ -45,7 +45,7 @@ export type SolflareMetamaskFeature = {
 export class SolflareMetamaskWallet implements Wallet {
   readonly #listeners: { [E in StandardEventsNames]?: StandardEventsListeners[E][] } = {};
   readonly #version = '1.0.0' as const;
-  readonly #name = 'MetaMask x Solflare' as const;
+  readonly #name = 'MetaMask' as const;
   readonly #icon = icon;
   #account: SolflareMetamaskWalletAccount | null = null;
   readonly #solflare: Solflare;
