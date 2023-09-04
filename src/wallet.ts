@@ -115,10 +115,6 @@ export class SolflareMetaMaskWallet implements Wallet {
   }
 
   constructor(config?: SolflareMetaMaskConfig) {
-    if (new.target === SolflareMetaMaskWallet) {
-      Object.freeze(this);
-    }
-
     this.#config = config || {};
   }
 
