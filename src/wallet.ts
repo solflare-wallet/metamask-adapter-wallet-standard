@@ -41,7 +41,7 @@ export const SolflareMetaMaskNamespace = 'solflareMetaMask:';
 
 export type SolflareMetaMaskFeature = {
   [SolflareMetaMaskNamespace]: {
-    solflareMetaMask: SolflareMetaMask;
+    solflareMetaMask: SolflareMetaMask | null;
   };
 };
 
@@ -51,8 +51,8 @@ export class SolflareMetaMaskWallet implements Wallet {
   readonly #name = 'MetaMask' as const;
   readonly #icon = icon;
   #account: SolflareMetaMaskWalletAccount | null = null;
-  #instance: SolflareMetaMask;
-  readonly #config: SolflareMetaMaskConfig;
+  #instance: SolflareMetaMask | null = null;
+  readonly #config: SolflareMetaMaskConfig = {};
 
   get version() {
     return this.#version;
@@ -120,8 +120,6 @@ export class SolflareMetaMaskWallet implements Wallet {
     }
 
     this.#config = config || {};
-
-    this.#connected();
   }
 
   #on: StandardEventsOnMethod = (event, listener) => {
@@ -144,6 +142,8 @@ export class SolflareMetaMaskWallet implements Wallet {
   }
 
   #connected = () => {
+    if (!this.#instance) return;
+
     const address = this.#instance.publicKey?.toString();
     if (address) {
       if (!this.#account || this.#account.address !== address) {
@@ -164,6 +164,8 @@ export class SolflareMetaMaskWallet implements Wallet {
   };
 
   #reconnected = () => {
+    if (!this.#instance) return;
+
     if (this.#instance.publicKey) {
       this.#connected();
     } else {
@@ -195,11 +197,13 @@ export class SolflareMetaMaskWallet implements Wallet {
   };
 
   #disconnect: StandardDisconnectMethod = async () => {
+    if (!this.#instance) return;
+
     await this.#instance.disconnect();
   };
 
   #signAndSendTransaction: SolanaSignAndSendTransactionMethod = async (...inputs) => {
-    if (!this.#account) throw new Error('not connected');
+    if (!this.#instance || !this.#account) throw new Error('not connected');
 
     const outputs: SolanaSignAndSendTransactionOutput[] = [];
 
@@ -231,7 +235,7 @@ export class SolflareMetaMaskWallet implements Wallet {
   };
 
   #signTransaction: SolanaSignTransactionMethod = async (...inputs) => {
-    if (!this.#account) throw new Error('not connected');
+    if (!this.#instance || !this.#account) throw new Error('not connected');
 
     const outputs: SolanaSignTransactionOutput[] = [];
 
@@ -277,7 +281,7 @@ export class SolflareMetaMaskWallet implements Wallet {
   };
 
   #signMessage: SolanaSignMessageMethod = async (...inputs) => {
-    if (!this.#account) throw new Error('not connected');
+    if (!this.#instance || !this.#account) throw new Error('not connected');
 
     const outputs: SolanaSignMessageOutput[] = [];
 
