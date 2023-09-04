@@ -32,7 +32,10 @@ import { SolflareMetaMaskWalletAccount } from './account.js';
 import { icon } from './icon.js';
 import type { SolanaChain } from './solana.js';
 import { isSolanaChain, SOLANA_CHAINS } from './solana.js';
-import SolflareMetaMask from '@solflare-wallet/metamask-sdk';
+import type {
+  default as SolflareMetaMask,
+  SolflareMetaMaskConfig
+} from '@solflare-wallet/metamask-sdk';
 
 export const SolflareMetaMaskNamespace = 'solflareMetaMask:';
 
@@ -48,7 +51,8 @@ export class SolflareMetaMaskWallet implements Wallet {
   readonly #name = 'MetaMask' as const;
   readonly #icon = icon;
   #account: SolflareMetaMaskWalletAccount | null = null;
-  readonly #instance: SolflareMetaMask;
+  #instance: SolflareMetaMask;
+  readonly #config: SolflareMetaMaskConfig;
 
   get version() {
     return this.#version;
@@ -110,16 +114,12 @@ export class SolflareMetaMaskWallet implements Wallet {
     return this.#account ? [this.#account] : [];
   }
 
-  constructor(instance: SolflareMetaMask) {
+  constructor(config?: SolflareMetaMaskConfig) {
     if (new.target === SolflareMetaMaskWallet) {
       Object.freeze(this);
     }
 
-    this.#instance = instance;
-
-    instance.on('connect', this.#connected, this);
-    instance.on('disconnect', this.#disconnected, this);
-    instance.on('accountChanged', this.#reconnected, this);
+    this.#config = config || {};
 
     this.#connected();
   }
@@ -173,6 +173,19 @@ export class SolflareMetaMaskWallet implements Wallet {
 
   #connect: StandardConnectMethod = async () => {
     if (!this.#account) {
+      let SDK: typeof SolflareMetaMask;
+      try {
+        SDK = (await import('@solflare-wallet/metamask-sdk')).default;
+      } catch (error: any) {
+        throw new Error('Unable to load Solflare MetaMask SDK', { cause: error });
+      }
+
+      this.#instance = new SDK(this.#config);
+
+      this.#instance.on('connect', this.#connected, this);
+      this.#instance.on('disconnect', this.#disconnected, this);
+      this.#instance.on('accountChanged', this.#reconnected, this);
+
       await this.#instance.connect();
     }
 
