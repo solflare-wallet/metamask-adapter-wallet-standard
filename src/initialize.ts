@@ -1,6 +1,6 @@
 import type { SolflareMetaMaskConfig } from '@solflare-wallet/metamask-sdk';
-import { registerWallet } from './register.js';
-import { SolflareMetaMaskWallet } from './wallet.js';
+import { registerWallet } from './register';
+import { SolflareMetaMaskWallet } from './wallet';
 import { detectEthereumProvider } from './detect';
 
 let isInitialized = false;

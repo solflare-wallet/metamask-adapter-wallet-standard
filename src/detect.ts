@@ -11,6 +11,7 @@ export async function isSnapSupported(provider: EthereumProvider) {
 
 export async function detectEthereumProvider() {
   try {
+    // @ts-ignore
     const provider = (window as WindowWithEthereum).ethereum;
 
     if (!provider) {

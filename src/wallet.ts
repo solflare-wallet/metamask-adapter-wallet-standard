@@ -2,17 +2,13 @@ import {
   SolanaSignAndSendTransaction,
   type SolanaSignAndSendTransactionFeature,
   type SolanaSignAndSendTransactionMethod,
-  type SolanaSignAndSendTransactionOutput,
   SolanaSignMessage,
   type SolanaSignMessageFeature,
   type SolanaSignMessageMethod,
-  type SolanaSignMessageOutput,
   SolanaSignTransaction,
   type SolanaSignTransactionFeature,
-  type SolanaSignTransactionMethod,
-  type SolanaSignTransactionOutput
+  type SolanaSignTransactionMethod
 } from '@solana/wallet-standard-features';
-import { VersionedTransaction } from '@solana/web3.js';
 import type { Wallet } from '@wallet-standard/base';
 import {
   StandardConnect,
@@ -27,11 +23,7 @@ import {
   type StandardEventsNames,
   type StandardEventsOnMethod
 } from '@wallet-standard/features';
-import bs58 from 'bs58';
-import { SolflareMetaMaskWalletAccount } from './account.js';
 import { icon } from './icon.js';
-import type { SolanaChain } from './solana.js';
-import { isSolanaChain, SOLANA_CHAINS } from './solana.js';
 import type {
   default as SolflareMetaMask,
   SolflareMetaMaskConfig
@@ -50,7 +42,6 @@ export class SolflareMetaMaskWallet implements Wallet {
   readonly #version = '1.0.0' as const;
   readonly #name = 'MetaMask' as const;
   readonly #icon = icon;
-  #account: SolflareMetaMaskWalletAccount | null = null;
   #instance: SolflareMetaMask | null = null;
   readonly #config: SolflareMetaMaskConfig = {};
 
@@ -67,7 +58,7 @@ export class SolflareMetaMaskWallet implements Wallet {
   }
 
   get chains() {
-    return SOLANA_CHAINS.slice();
+    return ['solana:mainnet', 'solana:devnet', 'solana:testnet', 'solana:localnet'] as const;
   }
 
   get features(): StandardConnectFeature &
@@ -111,7 +102,7 @@ export class SolflareMetaMaskWallet implements Wallet {
   }
 
   get accounts() {
-    return this.#account ? [this.#account] : [];
+    return this.#instance ? this.#instance.standardAccounts : [];
   }
 
   constructor(config?: SolflareMetaMaskConfig) {
@@ -137,164 +128,44 @@ export class SolflareMetaMaskWallet implements Wallet {
     );
   }
 
-  #connected = () => {
-    if (!this.#instance) return;
-
-    const address = this.#instance.publicKey?.toString();
-    if (address) {
-      if (!this.#account || this.#account.address !== address) {
-        this.#account = new SolflareMetaMaskWalletAccount({
-          address,
-          publicKey: this.#instance.publicKey!.toBytes()
-        });
-        this.#emit('change', { accounts: this.accounts });
-      }
-    }
-  };
-
-  #disconnected = () => {
-    if (this.#account) {
-      this.#account = null;
-      this.#emit('change', { accounts: this.accounts });
-    }
-  };
-
-  #reconnected = () => {
-    if (!this.#instance) return;
-
-    if (this.#instance.publicKey) {
-      this.#connected();
-    } else {
-      this.#disconnected();
-    }
-  };
-
   #connect: StandardConnectMethod = async () => {
-    if (!this.#account) {
+    if (!this.#instance) {
       let SDK: typeof SolflareMetaMask;
       try {
         SDK = (await import('@solflare-wallet/metamask-sdk')).default;
       } catch (error: any) {
-        throw new Error('Unable to load Solflare MetaMask SDK', { cause: error });
+        throw new Error('Unable to load Solflare MetaMask SDK');
       }
 
       this.#instance = new SDK(this.#config);
 
-      this.#instance.on('connect', this.#connected, this);
-      this.#instance.on('disconnect', this.#disconnected, this);
-      this.#instance.on('accountChanged', this.#reconnected, this);
-
-      await this.#instance.connect();
+      this.#instance.on('standard_change', (data) => this.#emit('change', data));
     }
 
-    this.#connected();
+    if (!this.accounts.length) {
+      await this.#instance.connect();
+    }
 
     return { accounts: this.accounts };
   };
 
   #disconnect: StandardDisconnectMethod = async () => {
     if (!this.#instance) return;
-
     await this.#instance.disconnect();
   };
 
   #signAndSendTransaction: SolanaSignAndSendTransactionMethod = async (...inputs) => {
-    if (!this.#instance || !this.#account) throw new Error('not connected');
-
-    const outputs: SolanaSignAndSendTransactionOutput[] = [];
-
-    if (inputs.length === 1) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const { transaction, account, chain, options } = inputs[0]!;
-      const { minContextSlot, preflightCommitment, skipPreflight, maxRetries } = options || {};
-      if (account !== this.#account) throw new Error('invalid account');
-      if (!isSolanaChain(chain)) throw new Error('invalid chain');
-
-      const signature = await this.#instance.signAndSendTransaction(
-        VersionedTransaction.deserialize(transaction),
-        {
-          preflightCommitment,
-          minContextSlot,
-          maxRetries,
-          skipPreflight
-        }
-      );
-
-      outputs.push({ signature: bs58.decode(signature) });
-    } else if (inputs.length > 1) {
-      for (const input of inputs) {
-        outputs.push(...(await this.#signAndSendTransaction(input)));
-      }
-    }
-
-    return outputs;
+    if (!this.#instance) throw new Error('not connected');
+    return await this.#instance.standardSignAndSendTransaction(...inputs);
   };
 
   #signTransaction: SolanaSignTransactionMethod = async (...inputs) => {
-    if (!this.#instance || !this.#account) throw new Error('not connected');
-
-    const outputs: SolanaSignTransactionOutput[] = [];
-
-    if (inputs.length === 1) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const { transaction, account, chain } = inputs[0]!;
-      if (account !== this.#account) throw new Error('invalid account');
-      if (chain && !isSolanaChain(chain)) throw new Error('invalid chain');
-
-      const signedTransaction = await this.#instance.signTransaction(
-        VersionedTransaction.deserialize(transaction)
-      );
-
-      outputs.push({ signedTransaction: signedTransaction.serialize() });
-    } else if (inputs.length > 1) {
-      let chain: SolanaChain | undefined;
-      for (const input of inputs) {
-        if (input.account !== this.#account) throw new Error('invalid account');
-        if (input.chain) {
-          if (!isSolanaChain(input.chain)) throw new Error('invalid chain');
-          if (chain) {
-            if (input.chain !== chain) throw new Error('conflicting chain');
-          } else {
-            chain = input.chain;
-          }
-        }
-      }
-
-      const transactions = inputs.map(({ transaction }) =>
-        VersionedTransaction.deserialize(transaction)
-      );
-
-      const signedTransactions = await this.#instance.signAllTransactions(transactions);
-
-      outputs.push(
-        ...signedTransactions.map((signedTransaction) => ({
-          signedTransaction: signedTransaction.serialize()
-        }))
-      );
-    }
-
-    return outputs;
+    if (!this.#instance) throw new Error('not connected');
+    return await this.#instance.standardSignTransaction(...inputs);
   };
 
   #signMessage: SolanaSignMessageMethod = async (...inputs) => {
-    if (!this.#instance || !this.#account) throw new Error('not connected');
-
-    const outputs: SolanaSignMessageOutput[] = [];
-
-    if (inputs.length === 1) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const { message, account } = inputs[0]!;
-      if (account !== this.#account) throw new Error('invalid account');
-
-      const signature = await this.#instance.signMessage(message);
-
-      outputs.push({ signedMessage: message, signature });
-    } else if (inputs.length > 1) {
-      for (const input of inputs) {
-        outputs.push(...(await this.#signMessage(input)));
-      }
-    }
-
-    return outputs;
+    if (!this.#instance) throw new Error('not connected');
+    return await this.#instance.standardSignMessage(...inputs);
   };
 }
