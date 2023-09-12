@@ -31,7 +31,7 @@ import {
   type StandardEventsNames,
   type StandardEventsOnMethod
 } from '@wallet-standard/features';
-import { icon } from './icon.js';
+import { icon } from './icon';
 
 export class SolflareMetaMaskWallet implements Wallet {
   readonly #listeners: { [E in StandardEventsNames]?: StandardEventsListeners[E][] } = {};
