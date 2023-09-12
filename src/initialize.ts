@@ -1,21 +1,20 @@
-import type { SolflareMetaMaskConfig } from '@solflare-wallet/metamask-sdk';
-import { registerWallet } from './register';
+import { registerWallet } from '@wallet-standard/wallet';
 import { SolflareMetaMaskWallet } from './wallet';
 import { detectEthereumProvider } from './detect';
 
 let isInitialized = false;
 
-export function initialize(config?: SolflareMetaMaskConfig): void {
+export function initialize(): void {
   if (isInitialized) {
     return;
   }
 
   isInitialized = true;
 
-  registerWallet(new SolflareMetaMaskWallet(config));
+  registerWallet(new SolflareMetaMaskWallet());
 }
 
-export async function initializeWhenDetected(config?: SolflareMetaMaskConfig): Promise<void> {
+export async function initializeWhenDetected(): Promise<void> {
   if (isInitialized) {
     return;
   }
@@ -24,5 +23,5 @@ export async function initializeWhenDetected(config?: SolflareMetaMaskConfig): P
     return;
   }
 
-  initialize(config);
+  initialize();
 }
