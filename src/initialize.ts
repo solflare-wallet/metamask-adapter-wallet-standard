@@ -14,6 +14,10 @@ export function initialize(): void {
 }
 
 export async function initializeWhenDetected(): Promise<void> {
+  if (isInitialized) {
+    return;
+  }
+
   const id = 'solflare-detect-metamask';
 
   function postMessage() {
