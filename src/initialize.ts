@@ -4,6 +4,10 @@ import { SolflareMetaMaskWallet } from './wallet';
 let isInitialized = false;
 
 export function initialize(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
   if (isInitialized) {
     return;
   }
@@ -14,6 +18,10 @@ export function initialize(): void {
 }
 
 export async function initializeWhenDetected(): Promise<void> {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
   if (isInitialized) {
     return;
   }
