@@ -1,6 +1,6 @@
 {
   "name": "@solflare-wallet/metamask-wallet-standard",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "author": "Solflare Developers <developers@solflare.com>",
   "repository": "",
   "license": "Apache-2.0",
@@ -28,7 +28,7 @@
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-standard-chains": "^1.1.0",
     "@solana/wallet-standard-features": "^1.0.1",
-    "@solflare-wallet/metamask-sdk": "^1.0.2",
+    "@solflare-wallet/metamask-sdk": "^1.0.3",
     "@wallet-standard/base": "^1.0.1",
     "@wallet-standard/features": "^1.0.3",
     "@wallet-standard/wallet": "^1.0.1",
